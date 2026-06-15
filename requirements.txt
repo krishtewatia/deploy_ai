@@ -1,0 +1,33 @@
+# Backend dependencies
+fastapi
+uvicorn[standard]
+pandas
+scikit-learn
+openpyxl
+python-multipart
+
+# Testing dependencies (should be installed in a dev environment)
+pytest
+httpx
+pytest-cov
+anyio
+coverage
+
+# Optional: for database (SQLAlchemy) and migrations
+# SQLAlchemy>=2.0.30
+# psycopg2-binary  # for PostgreSQL
+# Alembic>=1.13.0
+
+# Optional: for background tasks (Celery, Redis)
+# Celery==5.3.4
+# redis==5.0.1
+# click==8.2.0
+
+# Optional: for Google Cloud Storage (gcsfs)
+# gcsfs>=2024.6.0
+
+# Optional: for TensorFlow
+# tensorflow>=2.16.1
+
+# Optional: for XGBoost
+# xgboost>=2.1.2
