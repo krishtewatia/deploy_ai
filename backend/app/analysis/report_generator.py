@@ -21,6 +21,7 @@ class ReportGenerator:
         duplicates: DuplicateReport,
         statistics: StatisticsReport,
         imbalance: ImbalanceReport | None = None,
+        column_profiles: dict[str, dict] | None = None,
     ) -> DatasetAnalysisReport:
         """Combine specific reports into a unified DatasetAnalysisReport.
 
@@ -29,6 +30,7 @@ class ReportGenerator:
             duplicates: Report describing duplicate rows.
             statistics: Report describing descriptive statistics.
             imbalance: Optional report detailing target class imbalance.
+            column_profiles: Optional detailed profiling information for columns.
 
         Returns:
             A consolidated DatasetAnalysisReport.
@@ -40,6 +42,7 @@ class ReportGenerator:
             duplicates=duplicates,
             statistics=statistics,
             imbalance=imbalance,
+            column_profiles=column_profiles if column_profiles is not None else {},
         )
 
         logger.info("Consolidated dataset analysis report generated successfully.")

@@ -12,6 +12,7 @@ httpx
 pytest-cov
 anyio
 coverage
+groq
 
 # Optional: for database (SQLAlchemy) and migrations
 # SQLAlchemy>=2.0.30

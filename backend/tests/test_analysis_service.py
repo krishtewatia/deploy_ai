@@ -89,13 +89,14 @@ def test_analysis_service_dependency_injection() -> None:
     class MockReportGenerator:
         def __init__(self):
             self.called = False
-        def generate(self, missing_values, duplicates, statistics, imbalance):
+        def generate(self, missing_values, duplicates, statistics, imbalance, column_profiles=None):
             self.called = True
             return DatasetAnalysisReport(
                 missing_values=missing_values,
                 duplicates=duplicates,
                 statistics=statistics,
                 imbalance=imbalance,
+                column_profiles=column_profiles if column_profiles is not None else {},
             )
 
     missing = MockMissingAnalyzer()
@@ -124,3 +125,46 @@ def test_analysis_service_dependency_injection() -> None:
     assert report.missing_values.total_missing == 9
     assert report.duplicates.duplicate_rows == 7
     assert report.imbalance.imbalanced is True
+
+
+def test_analysis_service_column_profiler_injection() -> None:
+    """Test that custom ColumnProfiler can be injected into AnalysisService."""
+    class MockColumnProfiler:
+        def __init__(self):
+            self.called = False
+        def profile(self, df):
+            self.called = True
+            return {"mocked_col": {"dtype": "int", "unique_values": 1, "sample_values": [1]}}
+
+    mock_profiler = MockColumnProfiler()
+    service = AnalysisService(column_profiler=mock_profiler)
+    df = pd.DataFrame({"col": [1]})
+    report = service.analyze(df)
+
+    assert mock_profiler.called is True
+    assert "mocked_col" in report.column_profiles
+
+
+def test_analysis_service_integration_column_profiles() -> None:
+    """Integration test verifying column_profiles in DatasetAnalysisReport."""
+    df = pd.DataFrame({
+        "age": [20, 21, None],
+        "department": ["AI", "ML", "AI"]
+    })
+
+    service = AnalysisService()
+    report = service.analyze(df)
+
+    assert isinstance(report, DatasetAnalysisReport)
+    assert report.column_profiles is not None
+    assert "age" in report.column_profiles
+    assert "department" in report.column_profiles
+
+    # Check that at least one column profile contains: dtype, unique_values, sample_values
+    age_profile = report.column_profiles["age"]
+    assert "dtype" in age_profile
+    assert "unique_values" in age_profile
+    assert "sample_values" in age_profile
+
+    assert age_profile["unique_values"] == 2
+    assert age_profile["sample_values"] == [20.0, 21.0]

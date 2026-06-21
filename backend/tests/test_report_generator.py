@@ -92,3 +92,22 @@ def test_report_generator_without_imbalance(
     assert report.duplicates == mock_duplicates
     assert report.statistics == mock_statistics
     assert report.imbalance is None
+
+
+def test_report_generator_with_column_profiles(
+    mock_missing_values: MissingValueReport,
+    mock_duplicates: DuplicateReport,
+    mock_statistics: StatisticsReport,
+) -> None:
+    """Test generating a consolidated report with column profiles passed explicitly."""
+    generator = ReportGenerator()
+    column_profiles = {"col1": {"dtype": "int64", "unique_values": 2, "sample_values": [1, 2]}}
+    report = generator.generate(
+        missing_values=mock_missing_values,
+        duplicates=mock_duplicates,
+        statistics=mock_statistics,
+        column_profiles=column_profiles,
+    )
+
+    assert isinstance(report, DatasetAnalysisReport)
+    assert report.column_profiles == column_profiles

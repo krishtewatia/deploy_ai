@@ -82,3 +82,7 @@ class DatasetAnalysisReport(BaseModel):
         default=None,
         description="Optional class imbalance report (only generated when a target variable is analyzed)."
     )
+    column_profiles: dict[str, dict] = Field(
+        ...,
+        description="Detailed profiling information for each column in the dataset."
+    )

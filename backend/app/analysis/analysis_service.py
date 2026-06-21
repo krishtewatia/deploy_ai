@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 import pandas as pd
 
+from backend.app.analysis.column_profiler import ColumnProfiler
 from backend.app.analysis.duplicates import DuplicateAnalyzer
 from backend.app.analysis.imbalance import ImbalanceAnalyzer
 from backend.app.analysis.missing_values import MissingValueAnalyzer
@@ -24,6 +25,7 @@ class AnalysisService:
         statistics_analyzer: Optional[StatisticsAnalyzer] = None,
         imbalance_analyzer: Optional[ImbalanceAnalyzer] = None,
         report_generator: Optional[ReportGenerator] = None,
+        column_profiler: Optional[ColumnProfiler] = None,
     ) -> None:
         """Initialize AnalysisService with dependency injection.
 
@@ -33,12 +35,14 @@ class AnalysisService:
             statistics_analyzer: Analyzer for numerical statistics.
             imbalance_analyzer: Analyzer for target class imbalance.
             report_generator: Generator to compile reports.
+            column_profiler: Profiler for detailed column metadata.
         """
         self.missing_value_analyzer = missing_value_analyzer or MissingValueAnalyzer()
         self.duplicate_analyzer = duplicate_analyzer or DuplicateAnalyzer()
         self.statistics_analyzer = statistics_analyzer or StatisticsAnalyzer()
         self.imbalance_analyzer = imbalance_analyzer or ImbalanceAnalyzer()
         self.report_generator = report_generator or ReportGenerator()
+        self.column_profiler = column_profiler or ColumnProfiler()
 
     def analyze(
         self,
@@ -77,12 +81,16 @@ class AnalysisService:
         if target_column is not None:
             imbalance_report = self.imbalance_analyzer.analyze(df, target_column)
 
-        # 5. Generate final report using ReportGenerator
+        # 5. Run ColumnProfiler
+        column_profiles = self.column_profiler.profile(df)
+
+        # 6. Generate final report using ReportGenerator
         final_report = self.report_generator.generate(
             missing_values=missing_values_report,
             duplicates=duplicates_report,
             statistics=statistics_report,
             imbalance=imbalance_report,
+            column_profiles=column_profiles,
         )
 
         logger.info("Dataset analysis pipeline completed successfully.")
