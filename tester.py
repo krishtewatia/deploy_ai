@@ -1,37 +1,16 @@
 import pandas as pd
-from pprint import pprint
 
-from backend.app.analysis.analysis_service import AnalysisService
+from backend.app.preprocessing_engine.preprocessing_service import (
+    PreprocessingService,
+)
 
 df = pd.DataFrame(
     {
-        "age": [20, 21, None, 22],
-        "department": ["AI", "ML", "AI", "DS"],
+        "department": ["AI", "AI", "ML"],
+        "salary": [50000, None, 70000],
     }
 )
 
-service = AnalysisService()
+result = PreprocessingService().process(df)
 
-report = service.analyze(df)
-
-print("=" * 80)
-print("REPORT TYPE")
-print("=" * 80)
-
-print(type(report))
-
-print("\n")
-
-print("=" * 80)
-print("COLUMN PROFILES")
-print("=" * 80)
-
-pprint(report.column_profiles)
-
-print("\n")
-
-print("=" * 80)
-print("AGE PROFILE")
-print("=" * 80)
-
-pprint(report.column_profiles["age"])
+print(result.model_dump_json(indent=2))
