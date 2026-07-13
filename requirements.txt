@@ -32,3 +32,7 @@ groq
 
 # Optional: for XGBoost
 # xgboost>=2.1.2
+
+# Hardware detection
+psutil
+

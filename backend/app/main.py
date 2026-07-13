@@ -7,7 +7,6 @@ from backend.app.api.reports import router as reports_router
 from backend.app.api.training import router as training_router
 from backend.app.api.upload import router as upload_router
 from backend.app.api.analysis import router as analysis_router
-from backend.app.api.routes.eda import router as eda_router
 from backend.app.core.config import settings
 
 app = FastAPI(title="AI Project Builder API")
@@ -26,7 +25,6 @@ app.include_router(reports_router)
 app.include_router(training_router)
 app.include_router(upload_router)
 app.include_router(analysis_router)
-app.include_router(eda_router)
 
 
 @app.get("/health")
