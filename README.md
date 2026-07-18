@@ -1,5 +1,6 @@
 # DeployAI — AI-Powered MLOps & Auto-ML Platform
 
+<<<<<<< HEAD
 DeployAI is a production-grade, end-to-end MLOps backend platform that automates the complete machine learning lifecycle — from raw dataset ingestion and intelligent preprocessing through AI-assisted planning, multi-candidate model training, hyperparameter optimization, evaluation, AI critique reviews, deterministic model governance, and executive reporting.
 
 Built on **FastAPI**, the backend is architected as a modular, layered pipeline of 26 purpose-built services that communicate through strict Pydantic schema contracts, ensuring full traceability, reproducibility, and auditability at every stage.
@@ -560,19 +561,29 @@ deploy_ai/
 ├── tester.py                          # Quick validation script
 └── LICENSE                            # MIT License
 ```
+=======
+DeployAI is an end-to-end MLOps platform featuring automated data preprocessing, ML model training, evaluation, AI critique reviews, model governance auditing, and experiment tracking.
+
+The application comprises a **FastAPI backend** that hosts model evaluation and analysis algorithms, and a native **PySide6 desktop frontend dashboard** that guides users through importing datasets, configuring ML plans, tracking executions, and reviewing dashboard reports.
+>>>>>>> acd70bece88a5eefd238af79a88461d9966fdecc
 
 ---
 
 ## 🛠️ Prerequisites
 
+<<<<<<< HEAD
 - **Python 3.10+**
 - **Groq API Key** — set in `.env` file as `GROQ_API_KEY=your_key_here`
 - **pip** or **uv** package manager
+=======
+Make sure you have python 3.10+ and standard tools installed.
+>>>>>>> acd70bece88a5eefd238af79a88461d9966fdecc
 
 ---
 
 ## 🚀 Installation & Setup
 
+<<<<<<< HEAD
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/krishtewatia/deploy_ai.git
@@ -587,10 +598,21 @@ deploy_ai/
    source venv/bin/activate
 
    # Windows (PowerShell)
+=======
+1. **Clone or Navigate to the Directory**:
+   ```powershell
+   cd c:\Users\hp\Downloads\deploy_ai
+   ```
+
+2. **Create and Activate a Virtual Environment (Optional but Recommended)**:
+   ```powershell
+   python -m venv venv
+>>>>>>> acd70bece88a5eefd238af79a88461d9966fdecc
    .\venv\Scripts\Activate.ps1
    ```
 
 3. **Install Dependencies**:
+<<<<<<< HEAD
    ```bash
    pip install -r requirements.txt
    ```
@@ -599,10 +621,16 @@ deploy_ai/
    ```bash
    # Create .env file in project root
    echo "GROQ_API_KEY=your_groq_api_key_here" > .env
+=======
+   ```powershell
+   pip install -r requirements.txt
+   pip install PySide6
+>>>>>>> acd70bece88a5eefd238af79a88461d9966fdecc
    ```
 
 ---
 
+<<<<<<< HEAD
 ## ▶️ Running the Backend Server
 
 Launch the FastAPI backend API server (runs on `http://127.0.0.1:8000` by default):
@@ -705,3 +733,34 @@ python -m pytest backend/tests/test_report_generator.py -v
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 Copyright (c) 2026 upanya
+=======
+## 🖥️ Running the Application
+
+DeployAI runs as a decoupled backend API and a desktop GUI frontend.
+
+### 1. Start the FastAPI Backend
+To launch the backend API server (runs on `http://127.0.0.1:8000` by default):
+```powershell
+uvicorn backend.app.main:app --reload
+```
+
+### 2. Start the PySide6 Frontend GUI
+To run the PySide6 desktop interface, run the helper runner script from the root:
+```powershell
+python run_app.py
+```
+
+---
+
+## 🧪 Running tests
+
+You can run the full test suite (over 2,090 unit and integration tests) using pytest:
+
+```powershell
+# Run the entire test suite
+python -m pytest
+
+# Run only training results dashboard tests
+python -m pytest tests/test_training_results.py -v
+```
+>>>>>>> acd70bece88a5eefd238af79a88461d9966fdecc
