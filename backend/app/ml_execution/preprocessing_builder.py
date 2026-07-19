@@ -150,13 +150,20 @@ class PreprocessingPipelineBuilder:
 
         # 5. Build Pipeline Steps
         pipeline_steps = []
+        dropped_cols: set[str] = set()
 
         for step in plan.preprocessing_steps:
             op = step.operation
 
+            # Filter out any columns that were dropped in earlier steps
+            active_cols = [c for c in step.columns if c not in dropped_cols]
+            if not active_cols:
+                continue
+
             # Map operation to sklearn transformer
             if op == PreprocessingOperation.DROP_COLUMN:
                 transformer = "drop"
+                dropped_cols.update(active_cols)
             elif op == PreprocessingOperation.IMPUTE_MEAN:
                 transformer = SimpleImputer(strategy="mean")
             elif op == PreprocessingOperation.IMPUTE_MEDIAN:
@@ -188,11 +195,12 @@ class PreprocessingPipelineBuilder:
             # Create ColumnTransformer representing this step
             ct = ColumnTransformer(
                 transformers=[
-                    (step.step_id, transformer, list(step.columns)),
+                    (step.step_id, transformer, active_cols),
                 ],
                 remainder="passthrough",
                 verbose_feature_names_out=False,
             )
+            ct.set_output(transform="pandas")
             pipeline_steps.append((step.step_id, ct))
 
         # Handle empty preprocessing steps case by returning a passthrough pipeline

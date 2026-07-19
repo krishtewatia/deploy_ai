@@ -2,7 +2,7 @@
     {
         "dataset": "food_coded.csv",
         "status": "PASS",
-        "runtime": 69.33,
+        "runtime": 27.41,
         "problem_type": "classification",
         "best_model": "LogisticRegression",
         "metric": {
@@ -14,7 +14,7 @@
     {
         "dataset": "iris.csv",
         "status": "PASS",
-        "runtime": 236.02,
+        "runtime": 180.58,
         "problem_type": "classification",
         "best_model": "LogisticRegression",
         "metric": {
@@ -26,7 +26,7 @@
     {
         "dataset": "Iris.csv",
         "status": "PASS",
-        "runtime": 248.37,
+        "runtime": 261.25,
         "problem_type": "classification",
         "best_model": "LogisticRegression",
         "metric": {
@@ -39,5 +39,17 @@
         "dataset": "sample.csv",
         "status": "FAIL",
         "error_stage": "execution"
+    },
+    {
+        "dataset": "Titanic-Dataset.csv",
+        "status": "PASS",
+        "runtime": 342.55,
+        "problem_type": "classification",
+        "best_model": "RandomForestClassifier",
+        "metric": {
+            "f1": 0.5617
+        },
+        "model_path": "models/trained/Titanic-Dataset.pkl",
+        "report_path": "reports/Titanic-Dataset_report.json"
     }
 ]

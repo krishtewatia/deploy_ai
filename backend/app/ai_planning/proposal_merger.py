@@ -382,6 +382,12 @@ class ProposalMerger:
             fs["max_features"] = proposal.max_features
         fs["parameters"] = proposal.parameters
         fs["reason"] = f"[AI] {proposal.reason}"
+
+        cand_cols = fs.get("candidate_columns") or []
+        if cand_cols and fs.get("max_features") is not None:
+            if fs["max_features"] > len(cand_cols):
+                fs["max_features"] = len(cand_cols)
+
         candidate["feature_selection"] = fs
 
     # ── Evaluation Proposal ────────────────────────────────────────────

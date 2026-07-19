@@ -158,7 +158,28 @@ class BaselineMLPlanner:
         for col_name in problem_definition.feature_columns:
             col_ctx = col_lookup[col_name]
 
-            if col_ctx.is_numeric:
+            # Detect ID columns or high-cardinality text columns to drop
+            is_id_column = (
+                col_name.lower().endswith("id")
+                or col_name.lower() in ("id", "uuid", "guid", "ticket", "name")
+                or (col_ctx.is_numeric and col_ctx.unique_percentage > 95.0 and col_ctx.unique_count > 50)
+            )
+            is_high_cardinality_text = (
+                col_ctx.is_categorical
+                and (col_ctx.unique_count > 30 or col_ctx.unique_percentage > 40.0)
+            )
+
+            if is_id_column or is_high_cardinality_text:
+                preprocessing_steps.append(
+                    PreprocessingStep(
+                        step_id=next_step_id(),
+                        operation=PreprocessingOperation.DROP_COLUMN,
+                        columns=[col_name],
+                        parameters={},
+                        reason=f"Drop high-cardinality ID/text column '{col_name}' to prevent overfitting and noise.",
+                    )
+                )
+            elif col_ctx.is_numeric:
                 if col_ctx.missing_count > 0:
                     preprocessing_steps.append(
                         PreprocessingStep(

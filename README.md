@@ -1,121 +1,215 @@
-# DeployAI — AI-Powered AutoML & Model Training Platform
+# 🚀 DeployAI — Intelligent Terminal-Based AutoML Platform
 
-DeployAI is a terminal-based, end-to-end Auto-ML platform that automates the complete machine learning lifecycle. It operates purely as an in-memory Python backend with zero web-server or FastAPI dependencies. It is driven by an interactive command-line interface (CLI) and leverages local LLMs (via Ollama) or cloud providers (Groq/OpenAI) for intelligent, self-optimizing pipelines.
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Architecture](https://img.shields.io/badge/architecture-In--Memory%20Backend-orange.svg)](#-architecture--11-stage-pipeline)
+[![AI Providers](https://img.shields.io/badge/AI%20Providers-Ollama%20%7C%20Groq%20%7C%20OpenAI-purple.svg)](#-ai-integration--modes)
 
----
-
-## 📐 Model Training Pipeline Architecture
-
-DeployAI's execution engine orchestrates a strictly sequenced **11-Stage AutoML Pipeline** over in-memory domain models. Each stage is handled by dedicated Python service modules:
-
-```
-[1. Upload] ──> [2. Validation] ──> [3. Dataset Intelligence] ──> [4. Problem Definition] 
-                                                                           │
-┌──────────────────────────────────────────────────────────────────────────┘
-│
-▼
-[5. AI Configuration] ──> [6. Planning] ──> [7. Execution] ──> [8. Champion Selection]
-                                                                        │
-┌───────────────────────────────────────────────────────────────────────┘
-│
-▼
-[9. AI Explanation] ──> [10. PDF Generation] ──> [11. Export]
-```
-
-### The 11 Core Stages:
-
-1. **Upload (`upload/`)**
-   - Ingests single or multiple local dataset files (`.csv`, `.xlsx`, `.xls`).
-   - **Dataset Merging**: If multiple comma-separated files are provided, the engine verifies that schemas match (same context) and concatenates them automatically.
-   - **Inconsistency Correction**: Scans the loaded DataFrame for duplicate identical columns (same content/data values) and drops them.
-2. **Validation (`upload/validator.py`)**
-   - Validates that the loaded dataset is valid, checks column datatypes, detects missing entries, and ensures target label columns are valid.
-3. **Dataset Intelligence (`dataset_intelligence/`)**
-   - Constructs a structured profile (`DatasetContext`) cataloging feature types, statistics (mean, min, max, standard deviation), and value distributions.
-4. **Problem Definition (`problem_definition/`)**
-   - Automatically determines if the target column calls for a binary classification, multi-class classification, or regression task based on target column values and cardinality.
-5. **AI Configuration (`ai_providers/`)**
-   - Auto-detects local host compute capabilities (CPU cores, memory size) and identifies available AI model providers.
-6. **Planning (`ml_plan/` & `ai_planning/`)**
-   - Generates the preprocessing, feature engineering, and model training plan.
-   - **Deterministic Mode**: Automatically selects standard preprocessors (Imputer, Scaler, Encoder) and basic model candidates.
-   - **AI-Assisted Mode**: Leverages an LLM provider to optimize preprocessing choices, model candidates, and search parameters.
-7. **Execution (`ml_execution/`)**
-   - Performs a stratified train-test split, fits pipeline preprocessors, runs hyperparameter search (GridSearch/RandomSearch), and trains candidate classifiers or regressors.
-   - **Tuning Injection**: Automatically injects hyperparameter search spaces for baseline models (e.g. Random Forest, Gradient Boosting, SVM, Logistic Regression, Decision Tree, KNN) to prevent underfitting and overfitting.
-   - **Multi-class Scoring Optimization**: Dynamically maps classification scorers (e.g., `f1`, `precision`, `recall`, `roc_auc`) to their macro/OVR counterparts (e.g., `f1_macro`, `roc_auc_ovr`) on multi-class tasks, resolving scikit-learn search failures.
-8. **Champion Selection (`model_governance/`)**
-   - Executes deterministic model governance comparing candidates to select the champion model based on primary metric scores (F1, Accuracy, MSE).
-9. **AI Explanation (`ai_model_critic/`)**
-   - Leverages the LLM provider to review the final execution metrics and write a natural language critique detailing model strengths, weaknesses, and potential deployment risks.
-10. **PDF Generation (`reporting/`)**
-    - Compiles dataset profiles, candidate benchmark tables, governance results, and AI critiques into a professional multi-page PDF binary file (`reports/exec_report_*.pdf`).
-11. **Export (`exports/`)**
-    - Serializes the trained champion model binary to disk in the user's chosen format (`models/model_002_*.pkl`, `*.joblib`, `*.onnx`) and outputs the metadata path.
+**DeployAI** is an end-to-end, terminal-native **AutoML & Model Training Platform**. Operating as a pure, lightweight, in-memory Python engine without web-server bloat, DeployAI automates the entire machine learning pipeline—from dataset ingestion and automatic schema merging to AI-assisted hyperparameter tuning, model governance, executive PDF reporting, and multi-format binary exporting.
 
 ---
 
-## 🚀 How to Run the Project
+## ✨ Key Features
 
-### Prerequisites
-- Python 3.10+
-- (Optional) [Ollama](https://ollama.com/) running locally if you want to use local AI models.
+- ⚡ **11-Stage In-Memory Pipeline**: Zero database or server overhead; processes everything safely and rapidly in local memory.
+- 🤖 **Dual Execution Modes**:
+  - **Deterministic Engine**: Rapid baseline pipelines using scikit-learn standard preprocessors and algorithms.
+  - **AI-Assisted Engine**: Harnesses local LLMs (via [Ollama](https://ollama.com/)) or cloud models ([Groq](https://groq.com/), OpenAI) for intelligent feature engineering, pipeline planning, and model critique.
+- 📊 **Multi-Dataset Ingestion & Schema Merging**: Pass single or multiple files (`.csv`, `.xlsx`, `.xls`). DeployAI validates schemas, drops duplicate columns, and concatenates datasets automatically.
+- 🎯 **Automated Problem Detection**: Detects binary classification, multi-class classification, or regression tasks based on target label properties and cardinality.
+- 🛠️ **Smart Tuning & Multi-Class Optimization**: Automatically injects hyperparameter search spaces (`GridSearch` / `RandomSearch`) and map classification metrics (e.g. `f1_macro`, `roc_auc_ovr`) to prevent underfitting or runtime failure.
+- 🏆 **Champion Model Governance**: Compares candidate models deterministically across primary metrics (F1, Accuracy, MSE) to pick and serialize the winner.
+- 📦 **Multi-Format Serialization**: Export champion models into standard formats: **Pickle** (`.pkl`), **Joblib** (`.joblib`), or **ONNX** (`.onnx`).
+- 📄 **Executive PDF Reporting**: Generates sleek, comprehensive PDF reports complete with dataset summaries, candidate comparison tables, governance scores, and AI natural language critiques.
+- ⏱️ **Integrated Benchmarking**: Track runtime latency, CPU/RAM utilization, AI provider overhead, and model sizes per stage.
 
-### Installation
-1. Clone the project repository and navigate to its root directory.
-2. Install the required Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+---
 
-### 1. Interactive CLI Wizard (Recommended)
-To run the setup wizard and train a model interactively, run the CLI without arguments:
+## 📐 Architecture & 11-Stage Pipeline
+
+DeployAI's execution engine orchestrates a strictly sequenced **11-Stage Pipeline** over domain-specific Python services:
+
+```mermaid
+flowchart TD
+    A[1. Upload & Ingestion] --> B[2. Data Validation]
+    B --> C[3. Dataset Intelligence]
+    C --> D[4. Problem Definition]
+    D --> E[5. AI & Compute Config]
+    E --> F[6. ML & AI Planning]
+    F --> G[7. ML Execution & Tuning]
+    G --> H[8. Champion Selection]
+    H --> I[9. AI Model Critic]
+    I --> J[10. PDF Report Generation]
+    J --> K[11. Model Export]
+```
+
+### Stage Summary
+
+| # | Stage | Service Module | Key Operations |
+|---|---|---|---|
+| 1 | **Upload** | `backend/app/upload/` | Ingests `.csv`, `.xlsx`, `.xls`. Merges multi-file datasets with matching schemas & removes duplicate columns. |
+| 2 | **Validation** | `backend/app/upload/validator.py` | Checks datatypes, missing values, column integrity, and target column validity. |
+| 3 | **Dataset Intelligence** | `backend/app/dataset_intelligence/` | Builds detailed statistical profiling (`DatasetContext`), feature types, distributions, and missingness metrics. |
+| 4 | **Problem Definition** | `backend/app/problem_definition/` | Infers problem type: Binary Classification, Multi-class Classification, or Regression. |
+| 5 | **AI Configuration** | `backend/app/ai_providers/` | Detects hardware compute bounds (CPU, RAM) and detects local/cloud AI models. |
+| 6 | **Planning** | `backend/app/ml_plan/` & `ai_planning/` | Selects preprocessors, scaling strategies, candidate models, and hyperparameter search grids. |
+| 7 | **Execution** | `backend/app/ml_execution/` | Performs stratified split, fits transformers, executes grid/random hyperparameter tuning, and scores models. |
+| 8 | **Champion Selection** | `backend/app/model_governance/` | Evaluates model candidates deterministically and crown the champion based on target metrics. |
+| 9 | **AI Explanation** | `backend/app/ai_model_critic/` | Generates a natural-language AI critique evaluating model strengths, trade-offs, and deployment risks. |
+| 10 | **PDF Generation** | `backend/app/reporting/` | Compiles results into a multi-page PDF executive report (`reports/exec_report_*.pdf`). |
+| 11 | **Export** | `backend/app/workspace/` | Serializes trained champion model binary (`models/model_*.pkl`, `.joblib`, or `.onnx`). |
+
+---
+
+## ⚡ Quick Start
+
+### 1. Prerequisites
+- **Python 3.10+**
+- (Optional) [Ollama](https://ollama.com/) running locally for local LLM inference.
+
+### 2. Installation
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/krishtewatia/deploy_ai.git
+cd deploy_ai
+pip install -r requirements.txt
+```
+
+---
+
+## 🖥️ Usage
+
+DeployAI provides both an **interactive wizard** for easy guided execution and a **headless CLI** for automation and scripts.
+
+### 1. Interactive Setup Wizard (Recommended)
+
+Run the wizard to be guided step-by-step through dataset selection, target inference, AI model configuration, and export options:
+
 ```bash
 python cli.py
 ```
-The interactive wizard will guide you through:
-1. **Dataset Selection**: 
-   - Scans the `datasets/` folder and lists available datasets.
-   - You can choose a file from the list or **specify a custom path**.
-   - You can pass **multiple custom paths separated by commas** (e.g., `datasets/iris.csv,datasets/Iris.csv`). The engine will automatically verify schemas and merge them.
-2. **Target column input**: Ask for target column, or press Enter to auto-detect.
-3. **Model Export Format Selection**:
-   - Select your preferred model serialization format:
-     1. Pickle (`.pkl`) - Standard Python serialization
-     2. Joblib (`.joblib`) - Optimized for large numpy arrays
-     3. ONNX (`.onnx`) - Open Neural Network Exchange format (falls back to Pickle if `skl2onnx` is not installed)
-4. **AI Provider Select & Pull Menu**:
-   - **Option 1**: Detect and select an existing local Ollama model.
-   - **Option 2**: Download (pull) a new local model (e.g. `llama3.1`, `phi3`) dynamically via the command line.
-   - **Option 3**: Configure a cloud provider (Groq / OpenAI) by entering your API key.
-   - **Option 4**: Skip AI configuration and run in deterministic baseline mode.
+*(Or explicitly pass `-i` / `--interactive`)*
 
-### 2. Headless execution
-To run the CLI directly with arguments:
-```bash
-python cli.py --dataset datasets/iris.csv,datasets/Iris.csv --target target --mode deterministic --format joblib
-```
-
-Arguments:
-- `--dataset` - Path to local dataset file(s). Support multiple comma-separated paths.
-- `--target` - Column name to predict (optional, will be inferred if omitted).
-- `--mode` - `deterministic` (default) or `ai_assisted`.
-- `--format` - `pickle` (default), `joblib`, or `onnx`.
-- `--verbose` or `-v` - Enable verbose debug print logging.
+**Wizard Features**:
+1. 📁 **Dataset Selection**: Scans the `datasets/` directory or accepts custom file paths. Supports comma-separated paths for merging multiple files (e.g. `datasets/iris.csv,datasets/Iris.csv`).
+2. 🎯 **Target Column**: Auto-detects target labels or allows manual selection.
+3. 📦 **Export Format**: Choose between `.pkl`, `.joblib`, or `.onnx`.
+4. 🤖 **AI Provider Setup**:
+   - Detect and select installed local **Ollama** models (`llama3.1`, `phi3`, etc.).
+   - Dynamically **pull/download** new Ollama models directly from the CLI.
+   - Configure cloud providers (**Groq** / **OpenAI**) by entering your API key.
+   - Select **Deterministic Baseline Mode** to bypass AI LLM calls.
 
 ---
 
-## 🧪 Testing & Verification
+### 2. Headless CLI Execution
 
-### Unit Tests
-Execute unit tests for the pipeline engine, CLI parser, and model serializers:
+For scripted environments, CI/CD, or fast execution, pass arguments directly to `cli.py`:
+
+```bash
+# Basic run with standard dataset
+python cli.py --dataset datasets/iris.csv --target species
+
+# Merge multiple datasets and export as joblib
+python cli.py --dataset datasets/iris.csv,datasets/Iris.csv --mode deterministic --format joblib
+
+# Run with verbose debug output
+python cli.py --dataset datasets/sample.csv --verbose
+```
+
+#### CLI Command Options
+
+| Argument | Short | Description | Default |
+|---|---|---|---|
+| `--dataset` | `-d` | Path to dataset file(s). Supports comma-separated paths. | Interactive prompt |
+| `--target` | `-t` | Target label column to predict. | Auto-inferred |
+| `--mode` | `-m` | Planning mode (`deterministic` or `ai_assisted`). | `deterministic` |
+| `--format` | `-f` | Model export format (`pickle`, `joblib`, `onnx`). | `pickle` |
+| `--interactive` | `-i` | Force launching the interactive questionnaire wizard. | `False` |
+| `--verbose` | `-v` | Enable detailed debug log output. | `False` |
+
+---
+
+## 🤖 AI Integration & Providers
+
+DeployAI seamlessly toggles between deterministic baseline execution and AI-assisted optimization:
+
+- **Local Ollama Integration**: Connects via HTTP API to local Ollama instances (`http://localhost:11434`). The CLI can list active models and trigger `ollama pull <model>` commands directly.
+- **Cloud Providers**: Supports OpenAI-compatible APIs (including [Groq](https://groq.com/)). Provide an API key via environment variables or prompt entry.
+- **Environment Variables**:
+  Create a `.env` file in the project root:
+  ```env
+  GROQ_API_KEY=your_groq_api_key_here
+  OPENAI_API_KEY=your_openai_api_key_here
+  ```
+
+---
+
+## ⏱️ Benchmarking & Testing
+
+### 📊 Performance Benchmarking
+DeployAI features a built-in benchmarker that monitors runtime latency, CPU usage, RAM footprint, AI response latency, and serialized file sizes:
+
+```bash
+python benchmark.py
+```
+Outputs execution benchmarks directly to terminal and generates report metrics.
+
+### 🧪 Unit & Integration Test Suites
+
+Run unit tests for core pipeline engines, serializers, and CLI parsers:
 ```bash
 pytest backend/tests/test_deploy_ai_engine.py backend/tests/test_engine_cli.py
 ```
 
-### Functional Integration Suite
-To run end-to-end integration tests over all datasets (`iris.csv`, `Iris.csv`, `sample.csv`):
+Run the end-to-end integration test suite across provided datasets:
 ```bash
 python tester.py
 ```
-Upon completion, test logs will print to the console and generated JSON/PDF reports will be output to the `reports/` folder.
+This tests full pipeline execution, generating test logs along with JSON and PDF reports in `reports/`.
+
+---
+
+## 📂 Repository Structure
+
+```
+deploy_ai/
+├── backend/
+│   └── app/
+│       ├── ai_model_critic/        # AI natural language critique generator
+│       ├── ai_model_optimizer/     # Hyperparameter & pipeline prompt optimization
+│       ├── ai_planning/            # LLM-assisted ML pipeline planning
+│       ├── ai_providers/           # Ollama & OpenAI API adapters & discovery
+│       ├── dataset_intelligence/   # Dataset statistical profiling & metrics
+│       ├── hardware/               # CPU & RAM capability detector
+│       ├── ml_execution/           # Model training, train-test split, tuning
+│       ├── ml_plan/                # Deterministic pipeline planning
+│       ├── model_governance/       # Champion model selection logic
+│       ├── pipeline/               # 11-Stage orchestrator engine
+│       ├── problem_definition/     # Automated task type inference
+│       ├── reporting/              # PDF Executive report generator
+│       ├── upload/                 # Ingestion, schema verification, merging
+│       └── workspace/              # Model binary serialization & workspace IO
+├── datasets/                       # Sample & input datasets
+├── models/                         # Output serialized champion models (.pkl, .joblib, .onnx)
+├── reports/                        # Output generated PDF executive reports
+├── benchmark.py                    # Pipeline runtime & memory benchmarker
+├── cli.py                          # Interactive & headless CLI entrypoint
+├── tester.py                       # Automated E2E integration testing script
+└── requirements.txt                # Python dependencies
+```
+
+---
+
+## 📄 Output Artifacts
+
+Upon running a pipeline, DeployAI generates two main artifacts:
+1. **Champion Model Binary**: Saved in `models/` (e.g. `models/model_001_RandomForest.pkl`).
+2. **Executive PDF Report**: Saved in `reports/` (e.g. `reports/exec_report_*.pdf`), providing a formal summary of dataset metrics, candidate model scores, and AI recommendations.
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).

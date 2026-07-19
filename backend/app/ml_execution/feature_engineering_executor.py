@@ -136,11 +136,19 @@ class FeatureEngineeringExecutor:
             outputs = step.output_columns
 
             # Verify input columns exist in current dataframe (allows using previously created columns)
+            dataset_cols = {col.name for col in dataset_context.columns}
+            skip_step = False
             for in_col in inputs:
                 if in_col not in df_copy.columns:
-                    raise FeatureEngineeringExecutorError(
-                        f"Input column '{in_col}' does not exist for step {step.step_id}"
-                    )
+                    if in_col in dataset_cols:
+                        skip_step = True
+                        break
+                    else:
+                        raise FeatureEngineeringExecutorError(
+                            f"Input column '{in_col}' does not exist for step {step.step_id}"
+                        )
+            if skip_step:
+                continue
 
             try:
                 if op == FeatureEngineeringOperation.CUSTOM:
