@@ -19,6 +19,7 @@ from backend.app.ai_providers.factory import (
     AIProviderFactoryError,
     OllamaAIProvider,
     OpenAICompatibleAIProvider,
+    detect_ai_provider,
 )
 
 from backend.app.ai_providers.presets import (
@@ -60,6 +61,7 @@ __all__ = [
     "AIProviderFactoryError",
     "OllamaAIProvider",
     "OpenAICompatibleAIProvider",
+    "detect_ai_provider",
     "AIProviderPresetId",
     "AIProviderPreset",
     "AIProviderPresetRegistry",

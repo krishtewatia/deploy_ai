@@ -10,7 +10,13 @@ from typing import Any, List, Set
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, RobustScaler, StandardScaler
+from sklearn.preprocessing import (
+    MinMaxScaler,
+    OneHotEncoder,
+    OrdinalEncoder,
+    RobustScaler,
+    StandardScaler,
+)
 
 from backend.app.dataset_intelligence.schemas import DatasetContext
 from backend.app.ml_plan.schemas import MLPlan, PreprocessingOperation, PreprocessingStep
@@ -65,10 +71,15 @@ class PreprocessingPipelineBuilder:
         encoded_cols: Set[str] = set()
 
         supported_operations = {
+            PreprocessingOperation.DROP_COLUMN,
+            PreprocessingOperation.IMPUTE_MEAN,
             PreprocessingOperation.IMPUTE_MEDIAN,
             PreprocessingOperation.IMPUTE_MODE,
+            PreprocessingOperation.IMPUTE_CONSTANT,
             PreprocessingOperation.ONE_HOT_ENCODE,
+            PreprocessingOperation.ORDINAL_ENCODE,
             PreprocessingOperation.STANDARD_SCALE,
+            PreprocessingOperation.MINMAX_SCALE,
             PreprocessingOperation.ROBUST_SCALE,
             PreprocessingOperation.PASSTHROUGH,
         }
@@ -106,19 +117,31 @@ class PreprocessingPipelineBuilder:
                     raise PreprocessingPipelineBuilderError(f"Target column '{col}' cannot appear in preprocessing steps")
 
                 # Conflict checking
-                if op in (PreprocessingOperation.IMPUTE_MEDIAN, PreprocessingOperation.IMPUTE_MODE):
+                if op in {
+                    PreprocessingOperation.IMPUTE_MEAN,
+                    PreprocessingOperation.IMPUTE_MEDIAN,
+                    PreprocessingOperation.IMPUTE_MODE,
+                    PreprocessingOperation.IMPUTE_CONSTANT,
+                }:
                     if col in imputed_cols:
                         raise PreprocessingPipelineBuilderError(
                             f"Conflicting/duplicate imputation operation on column '{col}'"
                         )
                     imputed_cols.add(col)
-                elif op in (PreprocessingOperation.STANDARD_SCALE, PreprocessingOperation.ROBUST_SCALE):
+                elif op in {
+                    PreprocessingOperation.STANDARD_SCALE,
+                    PreprocessingOperation.MINMAX_SCALE,
+                    PreprocessingOperation.ROBUST_SCALE,
+                }:
                     if col in scaled_cols:
                         raise PreprocessingPipelineBuilderError(
                             f"Conflicting/duplicate scaling operation on column '{col}'"
                         )
                     scaled_cols.add(col)
-                elif op == PreprocessingOperation.ONE_HOT_ENCODE:
+                elif op in {
+                    PreprocessingOperation.ONE_HOT_ENCODE,
+                    PreprocessingOperation.ORDINAL_ENCODE,
+                }:
                     if col in encoded_cols:
                         raise PreprocessingPipelineBuilderError(
                             f"Conflicting/duplicate encoding operation on column '{col}'"
@@ -132,14 +155,30 @@ class PreprocessingPipelineBuilder:
             op = step.operation
 
             # Map operation to sklearn transformer
-            if op == PreprocessingOperation.IMPUTE_MEDIAN:
+            if op == PreprocessingOperation.DROP_COLUMN:
+                transformer = "drop"
+            elif op == PreprocessingOperation.IMPUTE_MEAN:
+                transformer = SimpleImputer(strategy="mean")
+            elif op == PreprocessingOperation.IMPUTE_MEDIAN:
                 transformer = SimpleImputer(strategy="median")
             elif op == PreprocessingOperation.IMPUTE_MODE:
                 transformer = SimpleImputer(strategy="most_frequent")
+            elif op == PreprocessingOperation.IMPUTE_CONSTANT:
+                transformer = SimpleImputer(
+                    strategy="constant",
+                    fill_value=step.parameters.get("fill_value", 0),
+                )
             elif op == PreprocessingOperation.ONE_HOT_ENCODE:
                 transformer = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+            elif op == PreprocessingOperation.ORDINAL_ENCODE:
+                transformer = OrdinalEncoder(
+                    handle_unknown="use_encoded_value",
+                    unknown_value=-1,
+                )
             elif op == PreprocessingOperation.STANDARD_SCALE:
                 transformer = StandardScaler()
+            elif op == PreprocessingOperation.MINMAX_SCALE:
+                transformer = MinMaxScaler()
             elif op == PreprocessingOperation.ROBUST_SCALE:
                 transformer = RobustScaler()
             else:

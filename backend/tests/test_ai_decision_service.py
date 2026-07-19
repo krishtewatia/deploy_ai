@@ -239,6 +239,64 @@ class TestAIDecisionService:
         assert result.final_plan.model_candidates[1].candidate_id == "ai_mc_rf"
         assert result.final_plan.model_candidates[1].model_family == ModelFamily.RANDOM_FOREST
 
+    def test_incomplete_feature_engineering_proposal_uses_baseline_plan(self):
+        """Malformed optional AI suggestions must not abort model training."""
+        response = json.loads(_make_valid_no_change_response())
+        response["feature_engineering_proposals"] = [
+            {
+                "proposal_id": "fe_incomplete_1",
+                "action": "add",
+                "operation": "ratio",
+                "input_columns": [],
+                "output_columns": [],
+                "reason": "Incomplete feature suggestion.",
+                "confidence": "medium",
+            },
+            {
+                "proposal_id": "fe_incomplete_2",
+                "action": "add",
+                "operation": "polynomial",
+                "input_columns": [],
+                "output_columns": [],
+                "reason": "Another incomplete feature suggestion.",
+                "confidence": "medium",
+            },
+        ]
+        service = AIDecisionService(
+            provider=MockAIProvider(response_text=json.dumps(response))
+        )
+
+        result = service.run_planning(
+            dataset_context=_make_dataset_context(),
+            user_request=_make_user_request(),
+            problem_definition=_make_problem_definition(),
+            compute_capabilities=_make_compute_capabilities(),
+            baseline_plan=_make_baseline_plan(),
+        )
+
+        assert result.applied is False
+        assert result.proposal.feature_engineering_proposals == []
+        assert result.final_plan.feature_engineering_steps == []
+
+    def test_partial_feature_selection_proposal_uses_safe_no_op(self):
+        response = json.loads(_make_valid_no_change_response())
+        response["feature_selection_proposal"] = {
+            "reason": "Feature selection evaluation",
+        }
+        service = AIDecisionService(
+            provider=MockAIProvider(response_text=json.dumps(response))
+        )
+
+        result = service.run_planning(
+            dataset_context=_make_dataset_context(),
+            user_request=_make_user_request(),
+            problem_definition=_make_problem_definition(),
+            compute_capabilities=_make_compute_capabilities(),
+            baseline_plan=_make_baseline_plan(),
+        )
+
+        assert result.final_plan.feature_selection.method == FeatureSelectionMethod.NONE
+
     def test_invalid_input_types_rejected(self):
         provider = MockAIProvider(response_text=_make_valid_no_change_response())
         service = AIDecisionService(provider=provider)
@@ -282,20 +340,22 @@ class TestAIDecisionService:
                 baseline_plan=_make_baseline_plan(),
             )
 
-    def test_parser_failure_wrapped(self):
+    def test_parser_failure_uses_deterministic_baseline(self):
         provider = MockAIProvider(response_text="Not valid JSON response")
         service = AIDecisionService(provider=provider)
 
-        with pytest.raises(AIDecisionServiceError, match="Failed to parse AI response"):
-            service.run_planning(
-                dataset_context=_make_dataset_context(),
-                user_request=_make_user_request(),
-                problem_definition=_make_problem_definition(),
-                compute_capabilities=_make_compute_capabilities(),
-                baseline_plan=_make_baseline_plan(),
-            )
+        result = service.run_planning(
+            dataset_context=_make_dataset_context(),
+            user_request=_make_user_request(),
+            problem_definition=_make_problem_definition(),
+            compute_capabilities=_make_compute_capabilities(),
+            baseline_plan=_make_baseline_plan(),
+        )
 
-    def test_merger_failure_wrapped(self):
+        assert result.applied is False
+        assert result.final_plan.plan_id == "plan_01"
+
+    def test_merger_failure_uses_deterministic_baseline(self):
         # AI response contains invalid change (e.g. standard scale on invalid column name)
         bad_response = json.dumps({
             "proposal_set_id": "ps_01",
@@ -319,14 +379,16 @@ class TestAIDecisionService:
         provider = MockAIProvider(response_text=bad_response)
         service = AIDecisionService(provider=provider)
 
-        with pytest.raises(AIDecisionServiceError, match="Failed to merge and validate proposal"):
-            service.run_planning(
-                dataset_context=_make_dataset_context(),
-                user_request=_make_user_request(),
-                problem_definition=_make_problem_definition(),
-                compute_capabilities=_make_compute_capabilities(),
-                baseline_plan=_make_baseline_plan(),
-            )
+        result = service.run_planning(
+            dataset_context=_make_dataset_context(),
+            user_request=_make_user_request(),
+            problem_definition=_make_problem_definition(),
+            compute_capabilities=_make_compute_capabilities(),
+            baseline_plan=_make_baseline_plan(),
+        )
+
+        assert result.applied is False
+        assert result.final_plan.plan_id == "plan_01"
 
     def test_none_mutation_assurance(self):
         provider = MockAIProvider(response_text=_make_valid_change_response())

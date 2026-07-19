@@ -1,0 +1,43 @@
+[
+    {
+        "dataset": "food_coded.csv",
+        "status": "PASS",
+        "runtime": 69.33,
+        "problem_type": "classification",
+        "best_model": "LogisticRegression",
+        "metric": {
+            "f1": 0.0167
+        },
+        "model_path": "models/trained/food_coded.pkl",
+        "report_path": "reports/food_coded_report.json"
+    },
+    {
+        "dataset": "iris.csv",
+        "status": "PASS",
+        "runtime": 236.02,
+        "problem_type": "classification",
+        "best_model": "LogisticRegression",
+        "metric": {
+            "f1": 1.0
+        },
+        "model_path": "models/trained/iris.pkl",
+        "report_path": "reports/iris_report.json"
+    },
+    {
+        "dataset": "Iris.csv",
+        "status": "PASS",
+        "runtime": 248.37,
+        "problem_type": "classification",
+        "best_model": "LogisticRegression",
+        "metric": {
+            "f1": 1.0
+        },
+        "model_path": "models/trained/Iris.pkl",
+        "report_path": "reports/Iris_report.json"
+    },
+    {
+        "dataset": "sample.csv",
+        "status": "FAIL",
+        "error_stage": "execution"
+    }
+]

@@ -175,28 +175,66 @@ class HyperparameterOptimizer:
         if plan is not None and plan.evaluation_plan is not None:
             folds = plan.evaluation_plan.cross_validation_folds
 
+        n_samples = len(X_train)
+        if n_samples < 2:
+            estimator.fit(X_train, y_train)
+            return HyperparameterOptimizerResult(
+                candidate_id=candidate.candidate_id,
+                model_family=candidate.model_family,
+                best_parameters=candidate.parameters,
+                best_score=0.0,
+                optimized_estimator=estimator,
+                search_duration_seconds=0.0,
+            )
+
+        folds = min(folds, n_samples)
+        if folds < 2:
+            folds = 2
+
         problem_type = problem_definition.problem_type
         if problem_type == ProblemType.CLASSIFICATION:
-            # Deterministic Stratified CV splitter
-            cv_splitter = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
+            unique_labels, label_counts = np.unique(y_train, return_counts=True)
+            min_class_count = int(np.min(label_counts))
+            if min_class_count < folds:
+                folds = max(2, min_class_count)
+            if min_class_count < 2:
+                cv_splitter = KFold(n_splits=folds, shuffle=True, random_state=42)
+            else:
+                cv_splitter = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
         elif problem_type == ProblemType.REGRESSION:
-            # Deterministic CV splitter
             cv_splitter = KFold(n_splits=folds, shuffle=True, random_state=42)
         else:
             raise HyperparameterOptimizerError(f"Unsupported problem type: {problem_type}")
+
+        # Check if classification target is multi-class
+        is_multiclass = False
+        if problem_type == ProblemType.CLASSIFICATION:
+            unique_labels = np.unique(y_train)
+            if len(unique_labels) > 2:
+                is_multiclass = True
 
         # Map metric name to scikit-learn scoring string
         metric = problem_definition.primary_metric
         metric_lower = metric.lower().strip()
         if problem_type == ProblemType.CLASSIFICATION:
-            metric_mapping = {
-                "accuracy": "accuracy",
-                "f1": "f1",
-                "precision": "precision",
-                "recall": "recall",
-                "roc_auc": "roc_auc",
-                "auc": "roc_auc",
-            }
+            if is_multiclass:
+                metric_mapping = {
+                    "accuracy": "accuracy",
+                    "f1": "f1_macro",
+                    "precision": "precision_macro",
+                    "recall": "recall_macro",
+                    "roc_auc": "roc_auc_ovr",
+                    "auc": "roc_auc_ovr",
+                }
+            else:
+                metric_mapping = {
+                    "accuracy": "accuracy",
+                    "f1": "f1",
+                    "precision": "precision",
+                    "recall": "recall",
+                    "roc_auc": "roc_auc",
+                    "auc": "roc_auc",
+                }
             scoring = metric_mapping.get(metric_lower, metric_lower)
         else:
             metric_mapping = {

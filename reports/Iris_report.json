@@ -1,0 +1,65 @@
+{
+  "report_id": "exec-f5daae54",
+  "title": "DeployAI Executive Model Report: logistic_regression",
+  "generated_timestamp": "2026-07-19T07:58:07.594961+00:00",
+  "problem_summary": {
+    "problem_type": "classification",
+    "target_column": "target",
+    "feature_columns": [
+      "sepal_length",
+      "sepal_width",
+      "petal_length",
+      "petal_width"
+    ]
+  },
+  "dataset_summary": {
+    "dataset_id": "pipe-37352a91",
+    "rows": 150,
+    "columns": 5
+  },
+  "pipeline_summary": {
+    "plan_id": "mlplan_81bdc68477204c66bff9a340f75db3f6",
+    "execution_duration_seconds": 2.842198800004553
+  },
+  "models_summary": [
+    {
+      "candidate_id": "model_001",
+      "algorithm": "logistic_regression",
+      "primary_metric": "f1",
+      "metric_value": 1.0
+    },
+    {
+      "candidate_id": "model_002",
+      "algorithm": "random_forest",
+      "primary_metric": "f1",
+      "metric_value": 0.899749373433584
+    }
+  ],
+  "champion_summary": {
+    "candidate_id": "model_001",
+    "algorithm": "logistic_regression",
+    "primary_metric": "f1",
+    "primary_metric_value": 1.0
+  },
+  "optimization_summary": {
+    "actions": []
+  },
+  "ai_review": {
+    "critique": "Baseline and retrained models are tied on f1 with difference 0.000000000000 (< 1e-9)"
+  },
+  "governance_summary": {
+    "winner": "TIE",
+    "decision_reason": "Baseline and retrained models are tied on f1 with difference 0.000000000000 (< 1e-9)"
+  },
+  "deployment_summary": {
+    "production_ready": false
+  },
+  "warnings": [
+    "MLPlan warning: Available system memory is critically limited for local ML workloads.",
+    "MLPlan warning: No supported GPU accelerator was detected; training will use CPU resources."
+  ],
+  "recommendations": [
+    "Deploy model to production endpoint"
+  ],
+  "executive_summary": "Baseline and retrained models are tied on f1 with difference 0.000000000000 (< 1e-9)"
+}

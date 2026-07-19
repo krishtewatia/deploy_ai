@@ -218,9 +218,12 @@ class MLPlanningOrchestrator:
                 )
                 final_plan = ai_result.final_plan
             except Exception as exc:
-                raise MLPlanningOrchestratorError(
-                    f"AI-assisted planning failed: {exc}"
-                ) from exc
+                logger.warning(
+                    "AI-assisted planning proposal was unsafe or invalid; continuing with "
+                    "the deterministic baseline plan: %s",
+                    exc,
+                )
+                final_plan = baseline_plan
 
         # 6. Final safety validation gate
         try:

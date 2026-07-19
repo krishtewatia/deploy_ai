@@ -36,4 +36,5 @@ groq
 
 # Hardware detection
 psutil
+fpdf2
 

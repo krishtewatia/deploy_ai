@@ -7,6 +7,8 @@ merges proposals with the baseline plan to produce a final validated plan.
 
 from __future__ import annotations
 
+import logging
+import uuid
 from typing import Optional
 
 from backend.app.ai_planning.context_builder import AIPlanningContextBuilder
@@ -20,6 +22,8 @@ from backend.app.dataset_intelligence.schemas import DatasetContext
 from backend.app.ml_plan.schemas import MLPlan
 from backend.app.ml_request.schemas import UserMLRequest
 from backend.app.problem_definition.schemas import ProblemDefinition
+
+logger = logging.getLogger(__name__)
 
 
 class AIDecisionServiceError(Exception):
@@ -139,10 +143,22 @@ class AIDecisionService:
         # 5. Parse Response
         try:
             proposal = self._parser.parse(raw_response)
+            # Ensure strict artifact linkage matching with baseline plan
+            proposal.baseline_plan_id = baseline_plan.plan_id
+            proposal.dataset_id = baseline_plan.dataset_id
+            proposal.request_id = baseline_plan.request_id
+            proposal.problem_definition_id = baseline_plan.problem_definition_id
+            proposal.compute_capability_id = baseline_plan.compute_capability_id
         except AIResponseParseError as exc:
-            raise AIDecisionServiceError(
-                f"Failed to parse AI response: {exc}"
-            ) from exc
+            logger.warning(
+                "AI planning response was unusable; continuing with the "
+                "deterministic baseline plan: %s",
+                exc,
+            )
+            return self._baseline_fallback(
+                baseline_plan=baseline_plan,
+                reason="AI response was unusable; deterministic baseline plan retained.",
+            )
         except Exception as exc:
             raise AIDecisionServiceError(
                 f"Unexpected response parsing error: {exc}"
@@ -158,9 +174,15 @@ class AIDecisionService:
                 compute_capabilities=compute_capabilities,
             )
         except ProposalMergerError as exc:
-            raise AIDecisionServiceError(
-                f"Failed to merge and validate proposal: {exc}"
-            ) from exc
+            logger.warning(
+                "AI planning proposal was unsafe or invalid; continuing with "
+                "the deterministic baseline plan: %s",
+                exc,
+            )
+            return self._baseline_fallback(
+                baseline_plan=baseline_plan,
+                reason="AI proposal was invalid; deterministic baseline plan retained.",
+            )
         except Exception as exc:
             raise AIDecisionServiceError(
                 f"Unexpected plan merge error: {exc}"
@@ -174,6 +196,29 @@ class AIDecisionService:
             proposal=proposal,
             final_plan=final_plan,
             applied=applied,
+        )
+
+    @staticmethod
+    def _baseline_fallback(
+        *,
+        baseline_plan: MLPlan,
+        reason: str,
+    ) -> AIAssistedPlanningResult:
+        """Return a valid no-change result when optional AI advice is unusable."""
+        proposal = AIDecisionProposal(
+            proposal_set_id=f"fallback_{uuid.uuid4().hex}",
+            baseline_plan_id=baseline_plan.plan_id,
+            dataset_id=baseline_plan.dataset_id,
+            request_id=baseline_plan.request_id,
+            problem_definition_id=baseline_plan.problem_definition_id,
+            compute_capability_id=baseline_plan.compute_capability_id,
+            summary=reason,
+        )
+        return AIAssistedPlanningResult(
+            baseline_plan_id=baseline_plan.plan_id,
+            proposal=proposal,
+            final_plan=baseline_plan,
+            applied=False,
         )
 
     def _has_changes(self, proposal: AIDecisionProposal) -> bool:

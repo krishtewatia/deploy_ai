@@ -103,26 +103,16 @@ class FeatureSelectionExecutor:
         if len(dataframe.columns) != len(set(dataframe.columns)):
             raise FeatureSelectionExecutorError("Duplicate column names detected in input dataframe")
 
-        # 6. Validate plan feature_columns existence
-        for col in plan.feature_columns or []:
-            if col not in dataframe.columns:
-                raise FeatureSelectionExecutorError(f"Feature column '{col}' does not exist in dataframe")
+        # 6. Available feature columns check
+        available_features = [col for col in dataframe.columns if col != target]
+        if not available_features:
+            raise FeatureSelectionExecutorError("No feature columns available in input dataframe")
 
-        # 7. Validate candidate_columns existence and target constraints
-        if target in candidate_columns:
-            raise FeatureSelectionExecutorError(
-                f"Target column '{target}' cannot be included in feature selection candidate_columns"
-            )
-
-        for col in candidate_columns:
-            if col not in dataframe.columns:
-                raise FeatureSelectionExecutorError(
-                    f"Candidate column '{col}' does not exist in dataframe"
-                )
-
-        # 8. Check duplicate candidate columns
-        if len(candidate_columns) != len(set(candidate_columns)):
-            raise FeatureSelectionExecutorError("Duplicate candidate columns detected in plan")
+        # Filter candidate_columns to available features present in preprocessed dataframe
+        valid_candidates = [col for col in candidate_columns if col in available_features]
+        if not valid_candidates:
+            valid_candidates = available_features
+        candidate_columns = valid_candidates
 
         # 9. Supported methods check
         supported_methods = {

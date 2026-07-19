@@ -141,12 +141,12 @@ class TestProblemResolver:
         defn = resolver.resolve(dataset_context=base_dataset, user_request=req)
         assert defn.target_source == TargetSource.USER
 
-    # 5. target_column=None raises ProblemResolverError
-    def test_target_column_none_raises_error(self, base_dataset):
+    # 5. target_column=None auto-detects last column
+    def test_target_column_none_autodetects_last_column(self, base_dataset):
         resolver = ProblemResolver()
         req = _make_user_request(target_column=None)
-        with pytest.raises(ProblemResolverError, match="target_column is None"):
-            resolver.resolve(dataset_context=base_dataset, user_request=req)
+        defn = resolver.resolve(dataset_context=base_dataset, user_request=req)
+        assert defn.target_column == base_dataset.columns[-1].name
 
     # 6. Missing target column raises ProblemResolverError
     def test_missing_target_column_raises_error(self, base_dataset):

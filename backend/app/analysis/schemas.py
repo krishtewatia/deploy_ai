@@ -38,6 +38,16 @@ class DuplicateReport(BaseModel):
     )
 
 
+class ColumnStatistics(BaseModel):
+    """Numerical summary statistics for a single column."""
+
+    mean: Optional[float] = Field(default=None, description="Arithmetic mean.")
+    median: Optional[float] = Field(default=None, description="Median (50th percentile).")
+    std: Optional[float] = Field(default=None, description="Standard deviation.")
+    min: Optional[float] = Field(default=None, description="Minimum value.")
+    max: Optional[float] = Field(default=None, description="Maximum value.")
+
+
 class StatisticsReport(BaseModel):
     """Report summarizing descriptive statistics for numerical columns."""
 

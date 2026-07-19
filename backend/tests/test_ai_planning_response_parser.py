@@ -160,7 +160,7 @@ class TestAIResponseParser:
             "summary": "Dup IDs.",
             "preprocessing_proposals": [
                 {"proposal_id": "dup", "action": "add", "operation": "impute_mean",
-                 "columns": [], "reason": "R.", "confidence": "low"},
+                 "columns": ["age"], "reason": "R.", "confidence": "low"},
             ],
             "model_candidate_proposals": [
                 {"proposal_id": "dup", "action": "add", "model_family": "knn",
@@ -169,3 +169,80 @@ class TestAIResponseParser:
         })
         with pytest.raises(AIResponseParseError, match="does not match"):
             parser.parse(data)
+
+    def test_incomplete_feature_engineering_proposals_are_ignored(self):
+        parser = AIResponseParser()
+        data = json.loads(_valid_proposal_json())
+        data["feature_engineering_proposals"] = [
+            {
+                "proposal_id": "fe_missing_columns",
+                "action": "add",
+                "operation": "ratio",
+                "input_columns": [],
+                "output_columns": [],
+                "reason": "Incomplete response.",
+                "confidence": "medium",
+            }
+        ]
+
+        result = parser.parse(json.dumps(data))
+
+        assert result.feature_engineering_proposals == []
+
+    def test_incomplete_preprocessing_proposals_are_ignored(self):
+        parser = AIResponseParser()
+        data = json.loads(_valid_proposal_json())
+        data["preprocessing_proposals"] = [
+            {
+                "proposal_id": "prep_missing_columns",
+                "action": "add",
+                "operation": "standard_scale",
+                "columns": [],
+                "reason": "Incomplete response.",
+                "confidence": "medium",
+            }
+        ]
+
+        result = parser.parse(json.dumps(data))
+
+        assert result.preprocessing_proposals == []
+
+    def test_unsupported_preprocessing_operation_is_ignored(self):
+        parser = AIResponseParser()
+        data = json.loads(_valid_proposal_json())
+        data["preprocessing_proposals"] = [
+            {
+                "proposal_id": "prep_unsupported",
+                "action": "add",
+                "operation": "datetime_extract",
+                "columns": ["created_at"],
+                "reason": "This operation is not executable by the current engine.",
+                "confidence": "medium",
+            }
+        ]
+
+        result = parser.parse(json.dumps(data))
+
+        assert result.preprocessing_proposals == []
+
+    def test_partial_feature_selection_proposal_becomes_a_safe_no_op(self):
+        parser = AIResponseParser()
+        data = json.loads(_valid_proposal_json())
+        data["feature_selection_proposal"] = {
+            "reason": "Feature selection evaluation",
+        }
+
+        result = parser.parse(json.dumps(data))
+
+        assert result.feature_selection_proposal.method.value == "none"
+        assert result.feature_selection_proposal.confidence.value == "medium"
+
+    def test_partial_evaluation_proposal_gets_required_defaults(self):
+        parser = AIResponseParser()
+        data = json.loads(_valid_proposal_json())
+        data["evaluation_proposal"] = {}
+
+        result = parser.parse(json.dumps(data))
+
+        assert result.evaluation_proposal.reason == "Evaluation plan review"
+        assert result.evaluation_proposal.confidence.value == "medium"

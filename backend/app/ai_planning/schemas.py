@@ -134,6 +134,15 @@ class AIPreprocessingProposal(BaseModel):
         _check_json_serializable("parameters", v)
         return v
 
+    @field_validator("columns", mode="before")
+    @classmethod
+    def _validate_columns(cls, v: Any) -> list[str]:
+        """Require concrete columns for a proposal that creates a plan step."""
+        columns = _validate_columns_list("columns", v)
+        if not columns:
+            raise ValueError("columns must contain at least one column")
+        return columns
+
 
 class AIFeatureEngineeringProposal(BaseModel):
     """A single proposed feature engineering change."""
@@ -181,6 +190,15 @@ class AIFeatureEngineeringProposal(BaseModel):
     def _validate_parameters(cls, v: Any) -> Any:
         _check_json_serializable("parameters", v)
         return v
+
+    @field_validator("input_columns", "output_columns", mode="before")
+    @classmethod
+    def _validate_columns(cls, v: Any) -> list[str]:
+        """Require concrete input and output columns for a feature step."""
+        columns = _validate_columns_list("feature engineering columns", v)
+        if not columns:
+            raise ValueError("feature engineering columns must contain at least one column")
+        return columns
 
 
 class AIModelCandidateProposal(BaseModel):

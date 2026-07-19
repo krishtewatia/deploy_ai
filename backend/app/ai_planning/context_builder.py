@@ -54,6 +54,9 @@ class AIPlanningContextBuilder:
     def _build_dataset_section(self, ctx: DatasetContext) -> dict[str, Any]:
         """Build the dataset metadata section."""
         columns = []
+        is_large_dataset = len(ctx.columns) > 15
+        sample_limit = 2 if is_large_dataset else 5
+
         for col in ctx.columns:
             col_data: dict[str, Any] = {
                 "name": col.name,
@@ -64,9 +67,9 @@ class AIPlanningContextBuilder:
                 "missing_percentage": col.missing_percentage,
                 "unique_count": col.unique_count,
                 "unique_percentage": col.unique_percentage,
-                "sample_values": col.sample_values[:5],
+                "sample_values": col.sample_values[:sample_limit] if col.sample_values else [],
             }
-            if col.statistics is not None:
+            if col.statistics is not None and not is_large_dataset:
                 col_data["statistics"] = {
                     "mean": col.statistics.mean,
                     "median": col.statistics.median,
@@ -86,6 +89,7 @@ class AIPlanningContextBuilder:
     def _build_user_goal_section(self, req: UserMLRequest) -> dict[str, Any]:
         """Build the user goal section."""
         return {
+            "request_id": req.request_id,
             "goal": req.goal,
             "target_column": req.target_column,
             "problem_type_preference": req.problem_type.value,
@@ -101,6 +105,7 @@ class AIPlanningContextBuilder:
             warnings_list.append({"code": w.code, "message": w.message})
 
         return {
+            "problem_definition_id": pd.definition_id,
             "target_column": pd.target_column,
             "problem_type": pd.problem_type.value,
             "feature_columns": pd.feature_columns,
@@ -116,6 +121,7 @@ class AIPlanningContextBuilder:
             warnings_list.append({"code": w.code, "message": w.message})
 
         return {
+            "compute_capability_id": cc.capability_id,
             "compute_tier": cc.compute_tier.value,
             "memory_constraint": cc.memory_constraint.value,
             "safe_parallel_workers": cc.safe_parallel_workers,
@@ -193,6 +199,7 @@ class AIPlanningContextBuilder:
             warnings.append({"code": w.code, "message": w.message})
 
         return {
+            "plan_id": plan.plan_id,
             "preprocessing_steps": preprocessing,
             "feature_engineering_steps": feature_engineering,
             "feature_selection": feature_selection,

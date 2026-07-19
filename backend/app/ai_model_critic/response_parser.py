@@ -53,6 +53,19 @@ class AIModelCriticResponseParser:
         # Authoritatively bind the correct report ID
         parsed_json["report_id"] = report_id
 
+        # Ensure list fields are lists of strings
+        for list_field in ["key_insights", "strengths", "weaknesses", "deployment_risks", "recommendations"]:
+            if list_field in parsed_json:
+                val = parsed_json[list_field]
+                if isinstance(val, str):
+                    parsed_json[list_field] = [val] if val.strip() else []
+                elif isinstance(val, list):
+                    parsed_json[list_field] = [str(item) for item in val if str(item).strip()]
+                else:
+                    parsed_json[list_field] = [str(val)]
+            else:
+                parsed_json[list_field] = []
+
         try:
             return ModelCritique(**parsed_json)
         except Exception as e:

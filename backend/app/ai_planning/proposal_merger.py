@@ -201,6 +201,8 @@ class ProposalMerger:
                     steps, proposal.operation.value, proposal.columns
                 )
                 if match_idx is None:
+                    match_idx = self._find_step_by_columns(steps, proposal.columns)
+                if match_idx is None:
                     raise ProposalMergerError(
                         f"Cannot REPLACE preprocessing step: no matching step found "
                         f"for operation='{proposal.operation.value}' "
@@ -224,6 +226,15 @@ class ProposalMerger:
             if step.get("operation") == operation:
                 if sorted(step.get("columns", [])) == sorted(columns):
                     return idx
+        return None
+
+    def _find_step_by_columns(
+        self, steps: list[dict], columns: list[str]
+    ) -> int | None:
+        """Find the first step matching columns exactly."""
+        for idx, step in enumerate(steps):
+            if sorted(step.get("columns", [])) == sorted(columns):
+                return idx
         return None
 
     # ── Feature Engineering Proposals ──────────────────────────────────
@@ -303,11 +314,15 @@ class ProposalMerger:
 
         for proposal in proposals:
             if proposal.action == ProposalAction.ADD:
+                strategy_val = proposal.search_strategy.value
+                if not proposal.search_space and strategy_val != "none":
+                    strategy_val = "none"
+
                 new_candidate = {
                     "candidate_id": f"ai_{proposal.proposal_id}",
                     "model_family": proposal.model_family.value,
                     "parameters": proposal.parameters,
-                    "search_strategy": proposal.search_strategy.value,
+                    "search_strategy": strategy_val,
                     "search_space": proposal.search_space,
                     "reason": f"[AI] {proposal.reason}",
                 }

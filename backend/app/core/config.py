@@ -62,12 +62,11 @@ class Settings(BaseSettings):
     )
 
     # ── AI / LLM ────────────────────────────────────────────────────────
-    GROQ_API_KEY: str = Field(
-        ...,
-        min_length=1,
+    GROQ_API_KEY: str | None = Field(
+        default=None,
         description=(
             "API key for the Groq LLM service. "
-            "Must be set in the environment or .env file."
+            "Optional."
         ),
     )
 

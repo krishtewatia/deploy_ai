@@ -18,6 +18,11 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
+from backend.app.analysis.schemas import ColumnStatistics, DuplicateReport
+
+# Alias for backward compatibility & semantic usage in dataset intelligence context
+DuplicateSummary = DuplicateReport
+
 
 # ---------------------------------------------------------------------------
 # 1. DatasetBasicInfo
@@ -51,35 +56,6 @@ class DatasetBasicInfo(BaseModel):
         ...,
         ge=0,
         description="Approximate in-memory size in bytes.",
-    )
-
-
-# ---------------------------------------------------------------------------
-# 2. ColumnStatistics
-# ---------------------------------------------------------------------------
-
-
-class ColumnStatistics(BaseModel):
-    """Optional compact numerical statistics for a column.
-
-    All fields default to ``None`` so the model can represent columns
-    where statistics are unavailable or inapplicable.
-    """
-
-    mean: Optional[float] = Field(
-        default=None, description="Arithmetic mean."
-    )
-    median: Optional[float] = Field(
-        default=None, description="Median (50th percentile)."
-    )
-    std: Optional[float] = Field(
-        default=None, description="Standard deviation."
-    )
-    min: Optional[float] = Field(
-        default=None, description="Minimum value."
-    )
-    max: Optional[float] = Field(
-        default=None, description="Maximum value."
     )
 
 
@@ -174,27 +150,6 @@ class MissingDataSummary(BaseModel):
     columns_with_missing: list[str] = Field(
         ...,
         description="List of column names that contain at least one missing value.",
-    )
-
-
-# ---------------------------------------------------------------------------
-# 5. DuplicateSummary
-# ---------------------------------------------------------------------------
-
-
-class DuplicateSummary(BaseModel):
-    """Summary of duplicate rows in the dataset."""
-
-    duplicate_rows: int = Field(
-        ...,
-        ge=0,
-        description="Total number of duplicate rows.",
-    )
-    duplicate_percentage: float = Field(
-        ...,
-        ge=0.0,
-        le=100.0,
-        description="Percentage of duplicate rows (0-100).",
     )
 
 

@@ -132,8 +132,11 @@ class SplitExecutor:
             if col_in_context is not None and not col_in_context.is_datetime:
                 raise SplitExecutorError(f"Time column '{time_col}' must be a datetime column")
 
-        # 9. Perform Split (safely operating on a copy of dataframe to prevent mutation)
-        df_copy = dataframe.copy()
+        # 9. Perform Split (safely operating on a copy of dataframe after dropping NaN targets)
+        df_copy = dataframe.dropna(subset=[target]).copy()
+        if df_copy.empty:
+            raise SplitExecutorError(f"Target column '{target}' contains only missing/NaN values")
+
         X = df_copy[features]
         y = df_copy[target]
 
@@ -148,14 +151,24 @@ class SplitExecutor:
                 )
             elif strategy == SplitStrategy.STRATIFIED:
                 stratify_series = df_copy[split_plan.stratify_column]
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X,
-                    y,
-                    test_size=split_plan.test_size,
-                    random_state=split_plan.random_state,
-                    shuffle=split_plan.shuffle,
-                    stratify=stratify_series,
-                )
+                value_counts = stratify_series.value_counts()
+                if (value_counts < 2).any():
+                    X_train, X_test, y_train, y_test = train_test_split(
+                        X,
+                        y,
+                        test_size=split_plan.test_size,
+                        random_state=split_plan.random_state,
+                        shuffle=split_plan.shuffle,
+                    )
+                else:
+                    X_train, X_test, y_train, y_test = train_test_split(
+                        X,
+                        y,
+                        test_size=split_plan.test_size,
+                        random_state=split_plan.random_state,
+                        shuffle=split_plan.shuffle,
+                        stratify=stratify_series,
+                    )
             elif strategy == SplitStrategy.TIME_BASED:
                 # Sort dataframe ascending by time column
                 sorted_df = df_copy.sort_values(by=split_plan.time_column, ascending=True)

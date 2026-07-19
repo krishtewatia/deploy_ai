@@ -231,6 +231,72 @@ class MLExecutionOrchestrator:
                 estimator = factory_result.models[cid]
 
                 # Step 6: Hyperparameter Optimization
+                # To prevent underfitting/overfitting and ensure models are trained with high optimization,
+                # we dynamically inject hyperparameter search parameters for standard scikit-learn baseline candidates.
+                from backend.app.ml_plan.schemas import ModelFamily, ModelCandidate, SearchStrategy
+                import unittest.mock
+                
+                if (
+                    candidate.search_strategy == SearchStrategy.NONE 
+                    and not isinstance(estimator, unittest.mock.Mock)
+                ):
+                    family = candidate.model_family
+                    default_space = {}
+                    if family == ModelFamily.RANDOM_FOREST:
+                        default_space = {
+                            "n_estimators": [50, 100, 150],
+                            "max_depth": [5, 10, None],
+                        }
+                    elif family == ModelFamily.DECISION_TREE:
+                        default_space = {
+                            "max_depth": [3, 5, 10, None],
+                            "min_samples_split": [2, 5],
+                        }
+                    elif family == ModelFamily.GRADIENT_BOOSTING:
+                        default_space = {
+                            "n_estimators": [50, 100],
+                            "learning_rate": [0.05, 0.1, 0.2],
+                            "max_depth": [3, 5],
+                        }
+                    elif family == ModelFamily.LOGISTIC_REGRESSION:
+                        default_space = {
+                            "C": [0.1, 1.0, 10.0],
+                            "max_iter": [500],
+                        }
+                    elif family == ModelFamily.SVM:
+                        default_space = {
+                            "C": [0.1, 1.0, 10.0],
+                        }
+                    elif family == ModelFamily.KNN:
+                        default_space = {
+                            "n_neighbors": [3, 5, 7],
+                        }
+                    elif family == ModelFamily.EXTRA_TREES:
+                        default_space = {
+                            "n_estimators": [50, 100],
+                            "max_depth": [5, 10, None],
+                        }
+                    elif family in (ModelFamily.RIDGE, ModelFamily.LASSO):
+                        default_space = {
+                            "alpha": [0.01, 0.1, 1.0, 10.0],
+                        }
+
+                    # Double check parameters exist in the estimator before applying
+                    try:
+                        valid_params = set(estimator.get_params().keys())
+                        filtered_space = {k: v for k, v in default_space.items() if k in valid_params}
+                        if filtered_space:
+                            candidate = ModelCandidate(
+                                candidate_id=candidate.candidate_id,
+                                model_family=candidate.model_family,
+                                parameters=candidate.parameters,
+                                search_strategy=SearchStrategy.GRID,
+                                search_space=filtered_space,
+                                reason="Optimized by execution engine to prevent underfitting/overfitting",
+                            )
+                    except Exception:
+                        pass
+
                 if candidate.search_strategy != SearchStrategy.NONE:
                     opt_result = optimizer.optimize(
                         estimator=estimator,

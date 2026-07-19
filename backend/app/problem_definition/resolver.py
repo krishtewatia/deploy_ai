@@ -60,12 +60,13 @@ class ProblemResolver:
             dataset_context.basic_info.dataset_id,
         )
 
-        # 1. Validate target column is explicitly provided
+        # 1. Validate target column (infer last column if not explicitly provided)
         target_name = user_request.target_column
         if target_name is None:
-            raise ProblemResolverError(
-                "target_column is None. Target column inference is not implemented yet."
-            )
+            if not dataset_context.columns:
+                raise ProblemResolverError("Dataset context contains no columns.")
+            target_name = dataset_context.columns[-1].name
+            logger.info("Auto-selected target column: %r", target_name)
 
         # Map dataset columns for O(1) existence and metadata lookups
         col_map = {col.name: col for col in dataset_context.columns}

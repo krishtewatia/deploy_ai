@@ -106,16 +106,16 @@ class TestAIPreprocessingProposal:
                 confidence=AIDecisionConfidence.LOW,
             )
 
-    def test_empty_columns_allowed(self):
-        p = AIPreprocessingProposal(
-            proposal_id="p1",
-            action=ProposalAction.REMOVE,
-            operation=PreprocessingOperation.DROP_COLUMN,
-            columns=[],
-            reason="Remove step.",
-            confidence=AIDecisionConfidence.MEDIUM,
-        )
-        assert p.columns == []
+    def test_empty_columns_rejected(self):
+        with pytest.raises(Exception, match="at least one column"):
+            AIPreprocessingProposal(
+                proposal_id="p1",
+                action=ProposalAction.REMOVE,
+                operation=PreprocessingOperation.DROP_COLUMN,
+                columns=[],
+                reason="Remove step.",
+                confidence=AIDecisionConfidence.MEDIUM,
+            )
 
     def test_serialization(self):
         p = AIPreprocessingProposal(
@@ -160,6 +160,22 @@ class TestAIFeatureEngineeringProposal:
                 input_columns=["a"],
                 output_columns=["b"],
                 reason="Test.",
+                confidence=AIDecisionConfidence.LOW,
+            )
+
+    @pytest.mark.parametrize(
+        ("input_columns", "output_columns"),
+        [([], ["ratio"]), (["income"], [])],
+    )
+    def test_empty_feature_columns_rejected(self, input_columns, output_columns):
+        with pytest.raises(Exception, match="at least one column"):
+            AIFeatureEngineeringProposal(
+                proposal_id="fe_empty",
+                action=ProposalAction.ADD,
+                operation=FeatureEngineeringOperation.RATIO,
+                input_columns=input_columns,
+                output_columns=output_columns,
+                reason="Incomplete feature proposal.",
                 confidence=AIDecisionConfidence.LOW,
             )
 

@@ -155,6 +155,41 @@ def _make_compute_capabilities() -> ComputeCapabilities:
 
 
 class TestPreprocessingPipelineBuilder:
+    def test_impute_mean_operation_builds_and_executes(self):
+        """AI-generated mean imputation must be executable by the ML engine."""
+        context = _make_dataset_context()
+        plan = BaselineMLPlanner().create_plan(
+            dataset_context=context,
+            problem_definition=_make_problem_definition(),
+            user_request=_make_user_request(),
+            compute_capabilities=_make_compute_capabilities(),
+        )
+        plan.preprocessing_steps = [
+            PreprocessingStep(
+                step_id="ai_mean_imputation",
+                operation=PreprocessingOperation.IMPUTE_MEAN,
+                columns=["age"],
+                reason="AI-selected mean imputation.",
+            )
+        ]
+
+        result = PreprocessingPipelineBuilder().build(
+            dataset_context=context,
+            plan=plan,
+        ).fit_transform(
+            pd.DataFrame(
+                {
+                    "age": [20.0, None, 40.0],
+                    "salary": [50000.0, 60000.0, 70000.0],
+                    "department": ["sales", "engineering", "sales"],
+                    "churn": [0, 1, 0],
+                }
+            )
+        )
+
+        assert result["age"].isna().sum() == 0
+        assert result.loc[1, "age"] == 30.0
+
     def test_pipeline_type_and_empty_steps(self):
         """Verify build returns a Pipeline even when preprocessing_steps list is empty."""
         context = _make_dataset_context()
@@ -329,13 +364,13 @@ class TestPreprocessingPipelineBuilder:
         caps = _make_compute_capabilities()
         plan = BaselineMLPlanner().create_plan(dataset_context=context, problem_definition=prob_def, user_request=req, compute_capabilities=caps)
 
-        # Create step with an unsupported operation
+        # Create step with an operation the execution builder does not implement.
         plan.preprocessing_steps = [
             PreprocessingStep(
-                step_id="step_mean",
-                operation=PreprocessingOperation.IMPUTE_MEAN,  # Unplanned/unsupported
+                step_id="step_datetime",
+                operation=PreprocessingOperation.DATETIME_EXTRACT,
                 columns=["age"],
-                reason="Unused mean imputer",
+                reason="Unsupported datetime extraction.",
             )
         ]
 

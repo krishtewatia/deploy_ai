@@ -79,6 +79,7 @@ class OllamaAIProvider(AIProvider):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
+            "format": "json",
             "stream": False
         }
         timeout = self._config.request_timeout_seconds
@@ -338,3 +339,59 @@ class AIProviderFactory:
             )
 
         return AIProviderFactory.create(active_config)
+
+
+def detect_ai_provider() -> AIProvider | None:
+    """Detects running Ollama services or Groq/OpenAI environment keys.
+    Returns the appropriate AIProvider instance or None if not configured.
+    """
+    import os
+    import httpx
+    from backend.app.ai_providers.schemas import OllamaProviderConfig, OpenAICompatibleProviderConfig
+
+    # 1. Check local Ollama service
+    ollama_url = "http://localhost:11434"
+    try:
+        response = httpx.get(f"{ollama_url}/api/tags", timeout=1)
+        if response.status_code == 200:
+            models_data = response.json()
+            models_list = models_data.get("models", [])
+            if models_list:
+                selected_model = models_list[0]["name"]
+                config = OllamaProviderConfig(
+                    config_id="auto-ollama",
+                    display_name="Auto Ollama",
+                    model_name=selected_model,
+                    base_url=ollama_url,
+                    request_timeout_seconds=600.0
+                )
+                return OllamaAIProvider(config)
+    except Exception:
+        pass
+
+    # 2. Check Groq API key
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key and groq_key != "mock" and groq_key != "mock_key":
+        config = OpenAICompatibleProviderConfig(
+            config_id="auto-groq",
+            display_name="Auto Groq",
+            model_name="llama-3.1-8b-instant",
+            base_url="https://api.groq.com/openai/v1",
+            api_key=groq_key
+        )
+        return OpenAICompatibleAIProvider(config)
+
+    # 3. Check OpenAI API key
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        config = OpenAICompatibleProviderConfig(
+            config_id="auto-openai",
+            display_name="Auto OpenAI",
+            model_name="gpt-4o-mini",
+            base_url="https://api.openai.com/v1",
+            api_key=openai_key
+        )
+        return OpenAICompatibleAIProvider(config)
+
+    return None
+
